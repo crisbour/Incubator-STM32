@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stdio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -27,6 +28,7 @@
 #include "lcd1602.h"
 #include "cb_stm32_onewire.h"
 #include "cb_stm32_gpio.h"
+#include "DS18B20.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,7 +53,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-OneWire_t OW;
+OneWire_t OW[4];
 char buffer[16];
 
 char int_to_hexString(uint8_t val){
@@ -121,31 +123,43 @@ int main(void)
 	}
 	LCD_Init(&hi2c1, 0x3F, 16, 2);		//Base Add for PCF8574 is 0x27 and for PCF8574A is 0x3F
 
-	OneWire_Init(&OW,GPIOA,1);
+	OneWire_Init(OW,GPIOA,1);
+	OneWire_Init(OW+1,GPIOA,1);
 
 	LCD_backlight();
 
-
-	if(OneWire_First(&OW))
+	if(OneWire_First(OW))
 	  HAL_GPIO_WritePin(LED_Red_GPIO_Port,LED_Red_Pin,GPIO_PIN_SET);
 	LCD_setCursor(0,0);
-	rom_to_hex(buffer, OW.ROM_NO);
+	rom_to_hex(buffer, OW[0].ROM_NO);
 	LCD_printstr(buffer);
+	if(OneWire_CRC8(OW[0].ROM_NO, 7)!=OW[0].ROM_NO[7]){
+		LCD_setCursor(0,0);
+		LCD_printstr("CRC is not valid!");
+	}
 
-
-	if(OneWire_Next(&OW))
+	OW[1]=OW[0];
+	if(OneWire_Next(OW+1))
 		  HAL_GPIO_WritePin(LED_Green_GPIO_Port,LED_Green_Pin,GPIO_PIN_SET);
 
 	LCD_setCursor(0,1);
-	rom_to_hex(buffer, OW.ROM_NO);
+	rom_to_hex(buffer, OW[1].ROM_NO);
 	LCD_printstr(buffer);
-  /* USER CODE END 2 */
 
+	DS18B20_Init(OW+1,ten_bits_PRECISION);
+
+  /* USER CODE END 2 */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
+	DS18B20_StartConv(OW+1);
+	float temp=DS18B20_ReadTemp(OW+1);
+	gcvt(temp,5,buffer);
+	LCD_clear();
+	LCD_setCursor(0,0);
+	LCD_printstr(buffer);
 
     /* USER CODE BEGIN 3 */
   }

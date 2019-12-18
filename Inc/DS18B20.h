@@ -10,9 +10,23 @@
 
 #include "cb_stm32_onewire.h"
 
-void DS18B20_InitReading(OneWire_t* OneWireStruct);
+#define DS18B20_CMD_CONVERT				0x44
+#define DS18B20_CMD_READ_SCRATCHPAD		0xBE
+#define DS18B20_CMD_WRITE_SCRATCHPAD	0x4E
+#define DS18B20_CMD_EEPROM_WRITE		0x48
 
-void DS18B20_ReadTemp(OneWire_t* OneWireStruct);
+typedef enum{
+	nine_bits_PRECISION=0x00,
+	ten_bits_PRECISION=0x01,
+	eleven_bits_PRECISION=0x10,
+	twelve_bits_PRECISION=0x11
+}DS18B20_CR;	//Configuration register
+
+uint8_t DS18B20_Init(OneWire_t* OneWireStruct, DS18B20_CR);
+
+uint8_t DS18B20_StartConv(OneWire_t* OneWireStruct);
+
+float DS18B20_ReadTemp(OneWire_t* OneWireStruct);
 
 
 
