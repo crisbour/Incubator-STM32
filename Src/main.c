@@ -23,7 +23,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "dwt_stm32_delay.h"
+#include "lcd1602.h"
+#include "cb_stm32_onewire.h"
+#include "cb_stm32_gpio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +51,20 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+OneWire_t OW;
+char buffer[16];
+
+char int_to_hexString(uint8_t val){
+	if(val<10) return '0'+val;
+
+	return 'A'+val-10;
+}
+void rom_to_hex(char* hexStr, uint8_t rom[]){
+	for(uint8_t i=0;i<8;i++){
+		hexStr[15-2*i]=int_to_hexString(rom[i]&0xF);
+		hexStr[14-2*i]=int_to_hexString((rom[i]&0xF0)>>4);
+	}
+}
 
 /* USER CODE END PV */
 
@@ -99,7 +116,29 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+	if(DWT_Delay_Init()){
+	  Error_Handler(); /* Call Error Handler */
+	}
+	LCD_Init(&hi2c1, 0x3F, 16, 2);		//Base Add for PCF8574 is 0x27 and for PCF8574A is 0x3F
 
+	OneWire_Init(&OW,GPIOA,1);
+
+	LCD_backlight();
+
+
+	if(OneWire_First(&OW))
+	  HAL_GPIO_WritePin(LED_Red_GPIO_Port,LED_Red_Pin,GPIO_PIN_SET);
+	LCD_setCursor(0,0);
+	rom_to_hex(buffer, OW.ROM_NO);
+	LCD_printstr(buffer);
+
+
+	if(OneWire_Next(&OW))
+		  HAL_GPIO_WritePin(LED_Green_GPIO_Port,LED_Green_Pin,GPIO_PIN_SET);
+
+	LCD_setCursor(0,1);
+	rom_to_hex(buffer, OW.ROM_NO);
+	LCD_printstr(buffer);
   /* USER CODE END 2 */
 
   /* Infinite loop */
