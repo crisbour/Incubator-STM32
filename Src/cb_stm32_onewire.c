@@ -6,6 +6,10 @@
  */
 #include "cb_stm32_onewire.h"
 
+void OneWire_AllInit(OneWire_t* OneWireStruct, uint8_t n, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin){
+	while(n--)
+		OneWire_Init(OneWireStruct+n,GPIOx,GPIO_Pin);
+}
 
 void OneWire_Init(OneWire_t* OneWireStruct, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
 	/* Initialize delay if it was not already */
@@ -129,11 +133,29 @@ uint8_t OneWire_Next(OneWire_t* OneWireStruct) {
    return OneWire_Search(OneWireStruct, ONEWIRE_CMD_SEARCHROM);
 }
 
+uint8_t OneWire_ID_Devices(OneWire_t* OneWireStruct, uint8_t n){
+	uint8_t i;
+	/*Reset search value*/
+	for(i=0;i<n;i++)
+		OneWire_ResetSearch(OneWireStruct+i);
+
+	/*Search*/
+	for(i=0;i<n;i++){
+		if(i)	OneWireStruct[i]=OneWireStruct[i-1];
+		if(!OneWire_Next(OneWireStruct+i))
+			break;
+		OneWireStruct[i].DeviceAvailable=1;
+	}
+	//	i= number of devices identified
+	return i;
+}
+
 void OneWire_ResetSearch(OneWire_t* OneWireStruct) {
 	/* Reset the search state */
 	OneWireStruct->LastDiscrepancy = 0;
 	OneWireStruct->LastDeviceFlag = 0;
 	OneWireStruct->LastFamilyDiscrepancy = 0;
+	OneWireStruct->DeviceAvailable=0;
 }
 
 uint8_t OneWire_Search(OneWire_t* OneWireStruct, uint8_t command) {
@@ -157,6 +179,7 @@ uint8_t OneWire_Search(OneWire_t* OneWireStruct, uint8_t command) {
 			OneWireStruct->LastDiscrepancy = 0;
 			OneWireStruct->LastDeviceFlag = 0;
 			OneWireStruct->LastFamilyDiscrepancy = 0;
+			OneWireStruct->DeviceAvailable = 0;
 			return 0;
 		}
 
@@ -239,6 +262,7 @@ uint8_t OneWire_Search(OneWire_t* OneWireStruct, uint8_t command) {
 		OneWireStruct->LastDiscrepancy = 0;
 		OneWireStruct->LastDeviceFlag = 0;
 		OneWireStruct->LastFamilyDiscrepancy = 0;
+		OneWireStruct->DeviceAvailable = 0;
 		search_result = 0;
 	}
 
@@ -356,6 +380,16 @@ uint8_t OneWire_CRC8(uint8_t *addr, uint8_t len) {
 
 	/* Return calculated CRC */
 	return crc;
+}
+
+uint8_t OneWire_CRC8_All(OneWire_t* OneWireStruct, uint8_t len){
+	uint8_t i=0;
+	while(OneWireStruct[i].DeviceAvailable){
+		if(OneWire_CRC8(OneWireStruct[i].ROM_NO, len)!=OneWireStruct[i].ROM_NO[len])
+			return i+1;	//return device ID where CRC8 is invalid
+		i++;
+	}
+	return 0;
 }
 
 

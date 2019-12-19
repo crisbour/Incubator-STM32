@@ -55,6 +55,7 @@ typedef struct {
 	uint8_t LastFamilyDiscrepancy; /*!< Search private */
 	uint8_t LastDeviceFlag;        /*!< Search private */
 	uint8_t ROM_NO[8];             /*!< 8-bytes address of last search device */
+	uint8_t DeviceAvailable;
 } OneWire_t;
 
 /**
@@ -62,6 +63,16 @@ typedef struct {
  * @brief    Library Functions
  * @{
  */
+
+/**
+ * @brief	Initializes OneWire bus with multiple devices
+ * @param	n:	Number of devices on the OneWire bus
+ * @param  *OneWireStruct: Pointer to @ref OneWire_t empty working onewire structure
+ * @param  *Pointer to GPIO port used for onewire channel
+ * @param  GPIO_Pin: GPIO Pin on specific GPIOx to be used for onewire channel
+ * @retval None
+ */
+void OneWire_AllInit(OneWire_t* OneWireStruct, uint8_t n, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 
 /**
  * @brief  Initializes OneWire bus
@@ -161,6 +172,16 @@ uint8_t OneWire_First(OneWire_t* OneWireStruct);
 uint8_t OneWire_Next(OneWire_t* OneWireStruct);
 
 /**
+ * @brief  Reads devices
+ * @param  *OneWireStruct: Pointer to @ref OneWire_t working onewire
+ * @param	n:	Number of devices connected to the OneWire bus
+ * @param  Device status:
+ *            - 0: No devices detected any more
+ *            - > 0: New device detected
+ */
+uint8_t OneWire_ID_Devices(OneWire_t* OneWireStruct, uint8_t n);
+
+/**
  * @brief  Gets ROM number from device from search
  * @param  *OneWireStruct: Pointer to @ref OneWire_t working onewire
  * @param  index: Because each device has 8-bytes long ROm address, you have to call this 8 times, to get ROM bytes from 0 to 7
@@ -200,6 +221,15 @@ void OneWire_SelectWithPointer(OneWire_t* OneWireStruct, uint8_t* ROM);
  * @retval Calculated CRC from input data
  */
 uint8_t OneWire_CRC8(uint8_t* addr, uint8_t len);
+
+/**
+ * @brief  Verify 8-bit CRC for 1-wire devices
+ * @param  *OneWireStruct: Pointer to @ref OneWire_t working onewire
+ * @param  len: Number of bytes to check
+ *
+ * @retval Calculated CRC from input data
+ */
+uint8_t OneWire_CRC8_All(OneWire_t* OneWireStruct,uint8_t len);
 
 /**
  * @}

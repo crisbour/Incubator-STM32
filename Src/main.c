@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdio.h"
+#include "printf.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -123,24 +123,33 @@ int main(void)
 	}
 	LCD_Init(&hi2c1, 0x3F, 16, 2);		//Base Add for PCF8574 is 0x27 and for PCF8574A is 0x3F
 
-	OneWire_Init(OW,GPIOA,1);
-	OneWire_Init(OW+1,GPIOA,1);
+	OneWire_AllInit(OW,4,GPIOA,1);
 
 	LCD_backlight();
 
-	if(OneWire_First(OW))
-	  HAL_GPIO_WritePin(LED_Red_GPIO_Port,LED_Red_Pin,GPIO_PIN_SET);
+	uint8_t index=0, n;
+
+	do{
+		n=OneWire_ID_Devices(OW,4);
+		LCD_setCursor(0,0);
+		sprintf(buffer,"%d devices found",n);
+		LCD_printstr(buffer);
+		if(index){
+			LCD_setCursor(0,1);
+			sprintf(buffer,"%d ID:invalid CRC",index);
+			LCD_printstr(buffer);
+		}
+		HAL_Delay(500);
+	}while((index=OneWire_CRC8_All(OW,7)));
+	HAL_GPIO_WritePin(LED_Red_GPIO_Port,LED_Red_Pin,GPIO_PIN_SET);
+	LCD_clear();
+	LCD_setCursor(0,0);
+	LCD_printstr("Init Successful!");
+	HAL_Delay(500);
+
 	LCD_setCursor(0,0);
 	rom_to_hex(buffer, OW[0].ROM_NO);
 	LCD_printstr(buffer);
-	if(OneWire_CRC8(OW[0].ROM_NO, 7)!=OW[0].ROM_NO[7]){
-		LCD_setCursor(0,0);
-		LCD_printstr("CRC is not valid!");
-	}
-
-	OW[1]=OW[0];
-	if(OneWire_Next(OW+1))
-		  HAL_GPIO_WritePin(LED_Green_GPIO_Port,LED_Green_Pin,GPIO_PIN_SET);
 
 	LCD_setCursor(0,1);
 	rom_to_hex(buffer, OW[1].ROM_NO);
