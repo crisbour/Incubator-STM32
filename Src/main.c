@@ -29,6 +29,7 @@
 #include "cb_stm32_onewire.h"
 #include "cb_stm32_gpio.h"
 #include "DS18B20.h"
+#include "menu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,6 +54,8 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+extern ADC_HandleTypeDef* hadc_global=&hadc2;
+
 OneWire_t OW[4];
 char buffer[16];
 
@@ -157,6 +160,8 @@ int main(void)
 
 	DS18B20_Init(OW+1,ten_bits_PRECISION);
 
+	InitMenu();
+
   /* USER CODE END 2 */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -165,10 +170,20 @@ int main(void)
     /* USER CODE END WHILE */
 	DS18B20_StartConv(OW+1);
 	float temp=DS18B20_ReadTemp(OW+1);
-	gcvt(temp,5,buffer);
+	sprintf(buffer,"%2.2f",temp);
 	LCD_clear();
 	LCD_setCursor(0,0);
 	LCD_printstr(buffer);
+
+	//Display ADC
+	HAL_ADC_Start(&hadc2);
+	HAL_ADC_PollForConversion(&hadc2, HAL_MAX_DELAY);
+	sprintf(buffer,"%d",HAL_ADC_GetValue(&hadc2));
+	LCD_setCursor(7,0);
+	LCD_printstr(buffer);
+
+	//Display Menu
+	DisplayMenu();
 
     /* USER CODE BEGIN 3 */
   }
